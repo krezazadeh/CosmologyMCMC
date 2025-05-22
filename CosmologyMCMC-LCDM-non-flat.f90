@@ -79,13 +79,14 @@ program CosmologyMCMC
     ! Model parameters
 
     ! Constant parameters of the model
-    real(8), parameter :: ok = 0.0d0
+    ! real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 3
+    integer, parameter :: nparams = 4
     
     ! Varying parameters of the model
-    real(8) :: h, ob, oc
+    ! real(8) :: h, ob, oc
+    real(8) :: h, ob, oc, ok
     
     ! DLsol
     integer, parameter :: n_array_z = 100000
@@ -98,7 +99,8 @@ program CosmologyMCMC
     real(8), dimension(ndataCMB) :: dataCMB
     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
     ! Curvature of the universe
-    logical, parameter :: is_flat = .true.
+    ! logical, parameter :: is_flat = .true.
+    logical, parameter :: is_flat = .false.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -175,10 +177,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.68d0, 0.04d0, 0.26d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0 /)
-    priormin = (/ 0.6d0, 0.01d0, 0.1d0 /)
-    priormax = (/ 0.8d0, 0.1d0, 0.5d0 /)
+    initpoint = (/ 0.68d0, 0.04d0, 0.26d0, 0.0d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.0001 /)
+    priormin = (/ 0.6d0, 0.01d0, 0.1d0, -0.1d0 /)
+    priormax = (/ 0.8d0, 0.1d0, 0.5d0 0.1d0 /)
 
     converged = .false.
 
@@ -206,6 +208,7 @@ program CosmologyMCMC
     h = params(1)
     ob = params(2)
     oc = params(3)
+    ok = params(4)
     call DLsol()
     chi2params = chi2total()
 
@@ -221,6 +224,7 @@ program CosmologyMCMC
         h = params_new(1)
         ob = params_new(2)
         oc = params_new(3)
+        ok = params_new(4)
         call DLsol()
         chi2params_new = chi2total()
 
@@ -231,13 +235,14 @@ program CosmologyMCMC
             h = params(1)
             ob = params(2)
             oc = params(3)
+            ok = params(4)
             call DLsol()
             chi2params = chi2total()
         end if
 
         points_local(rank + 1, i, :) = params
 
-        write(10 + rank, "(9e25.16)") 1.0d0, chi2params, params, &
+        write(10 + rank, "(10e25.16)") 1.0d0, chi2params, params, &
         H0(), om(), ol(), age()
 
     end do
@@ -887,7 +892,7 @@ subroutine CMB_Planck2018()
 
     integer :: i, j
     
-    if (is_flat == .true.) then
+    if (is_flat == .true.)then
         open (unit = 11, file = './data/CMB_Planck2018/CMB_Planck2018-flat.txt', status = 'old')
     else
         open (unit = 11, file = './data/CMB_Planck2018/CMB_Planck2018-non-flat.txt', status = 'old')
