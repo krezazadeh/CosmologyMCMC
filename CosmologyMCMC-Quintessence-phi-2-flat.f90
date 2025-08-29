@@ -77,6 +77,9 @@ program CosmologyMCMC
 
     ! Model parameters
 
+    ! Curvature of the universe
+    logical, parameter :: is_flat = .true.
+
     ! Constant parameters of the model
     real(8), parameter :: ok = 0.0d0
     
@@ -105,8 +108,6 @@ program CosmologyMCMC
     integer, parameter :: ndataCMB = 4
     real(8), dimension(ndataCMB) :: dataCMB
     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
-    ! Curvature of the universe
-    logical, parameter :: is_flat = .true.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -114,19 +115,19 @@ program CosmologyMCMC
     character(len=20), dimension(ndataBAO) :: quantityBAO
     real(8), dimension(ndataBAO, ndataBAO) :: covBAO, invcovBAO
 
-    ! ! SN_DESY5
-    ! integer, parameter :: ndataSN = 1829
-    ! real(8) :: dataSN(ndataSN, 7)
-    ! real(8) :: Dij(ndataSN, ndataSN)
-    ! real(8) :: CijSN(ndataSN, ndataSN), invCijSN(ndataSN, ndataSN)
-    ! real(8) :: Id(ndataSN)
-
-    ! SN_Pantheon
-    integer, parameter :: ndataSN = 1048
-    real(8) :: dataSN(ndataSN, 18)
+    ! SN_DESY5
+    integer, parameter :: ndataSN = 1829
+    real(8) :: dataSN(ndataSN, 7)
     real(8) :: Dij(ndataSN, ndataSN)
     real(8) :: CijSN(ndataSN, ndataSN), invCijSN(ndataSN, ndataSN)
     real(8) :: Id(ndataSN)
+
+!     ! SN_Pantheon
+!     integer, parameter :: ndataSN = 1048
+!     real(8) :: dataSN(ndataSN, 18)
+!     real(8) :: Dij(ndataSN, ndataSN)
+!     real(8) :: CijSN(ndataSN, ndataSN), invCijSN(ndataSN, ndataSN)
+!     real(8) :: Id(ndataSN)
 
     ! MCMC
     integer, parameter :: max_try = 10000
@@ -166,8 +167,8 @@ program CosmologyMCMC
 
     call BAO_DESI_DR2()
     
-    ! call SN_DESY5()
-    call SN_Pantheon()
+    call SN_DESY5()
+!     call SN_Pantheon()
 
     allocate(points_local(nprocess, max_iter, nparams))
     allocate(sendbuf(sendcount))
@@ -191,7 +192,7 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.68d0, 0.04713d0, 0.2474d0, -6.0d0 /)
+    initpoint = (/ 0.68d0, 0.04713d0, 0.2474d0, -5.6d0 /)
     jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
     priormin = (/ 0.6d0, 0.01d0, 0.1d0, -6.46d0 /)
     priormax = (/ 0.8d0, 0.1d0, 0.5d0, -4.97d0 /)
@@ -260,8 +261,8 @@ program CosmologyMCMC
 
         points_local(rank + 1, i, :) = params_new
 
-        write(10 + rank, "(10e25.16)") 1.0d0, chi2params_new, params_new, &
-        H0(), om(), ol(), age()
+        write(10 + rank, "(11e25.16)") 1.0d0, chi2params_new, params_new, &
+        H0(), om(), ol(), age(), Vt0
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
@@ -1033,7 +1034,7 @@ end function chi2_BAO_DESI_DR2
 subroutine SN_DESY5()
 
     implicit none
-    
+
     integer :: i, j
     integer :: ios
     character(len=200) :: line
@@ -1046,14 +1047,14 @@ subroutine SN_DESY5()
     open (unit = 11, file = './data/DESY5_SN/DES-SN5YR_HD.txt', status = 'old')
 
     read(11,'(A)', iostat=ios) line
-    
+
     do i = 1, ndataSN
         read(11, *) CID(i), IDSURVEY(i), zCMB(i), zHD(i), zHEL(i), MU(i), MUERR(i)
     end do
 
     close(11)
 
-    ! We use this to prevent compiler error.    
+    ! We use this to prevent compiler error.
     do i = 1, ndataSN
         dataSN(i, 1) = 0.0d0
         dataSN(i, 2) = 0.0d0
@@ -1067,11 +1068,11 @@ subroutine SN_DESY5()
     open(11, file = "./data/DESY5_SN/covsys_000.txt", status='old')
 
         read(11, *) ! skip dimension line
-    
+
         do i = 1, ndataSN
             read(11, *) (Dij(i,j), j = 1, ndataSN)
         end do
-    
+
     close(11)
 
     do i = 1, ndataSN
@@ -1091,41 +1092,37 @@ subroutine SN_DESY5()
 end subroutine SN_DESY5
 
 function chi2_SN_DESY5()
-    
+
     real(8) :: chi2_SN_DESY5
-    
+
     real(8) :: z, mu_obs, mu_model
     real(8) :: delta_m(ndataSN)
     integer :: i, j
 
-    real(8) :: A, B, E
+    real(8) :: A
 
     do i = 1, ndataSN
         z = dataSN(i, 3)
         mu_obs = dataSN(i, 6)
-        mu_model = 5.d0 * log10(((1 + dataSN(i, 4))/(1 + z)) * DL(z)) + 25.0d0
+        mu_model = 5.d0*log10(DL_DESY5(z)) + 25.0d0
         delta_m(i) = mu_obs - mu_model
     end do
 
     A = 0.0d0
-    B = 0.0d0
-    E = 0.0d0
     do i = 1, ndataSN
         do j = 1, ndataSN
-            A = A + delta_m(i) * invCijSN(i,j) * delta_m(j)
-            B = B + delta_m(i) * invCijSN(i,j) * Id(j)
-            E = E + Id(i) * invCijSN(i,j) * Id(j)
+            A = A + delta_m(i)*invCijSN(i,j)*delta_m(j)
         end do
     end do
 
-    chi2_SN_DESY5 = A + log(E/(2.0d0 * 3.141592653589793d0)) - (B**2)/E
+    chi2_SN_DESY5 = A
 
 end function chi2_SN_DESY5
 
 function M0_SN()
-    
+
     real(8) :: M0_SN
-    
+
     real(8) :: B, E
     real(8) :: z, mu_model, flux
     real(8) :: delta_m(ndataSN: ndataSN)
@@ -1150,6 +1147,35 @@ function M0_SN()
     M0_SN = B/E
 
 end function M0_SN
+
+function DL_DESY5(z)
+
+    implicit none
+
+    real(8) :: DL_DESY5
+    real(8) :: z
+
+    if (is_flat) then
+        DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
+        rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6)
+    else
+        DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
+        (1.0d0/sqrt(ok))*sinh(sqrt(ok)* &
+        rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6))
+    end if
+
+end function DL_DESY5
+
+function DL_DESY5_integrand(z)
+
+    implicit none
+
+    real(8) :: DL_DESY5_integrand
+    real(8) :: z
+
+    DL_DESY5_integrand = 1.0d0/Ht(1.0d0/(z + 1.0d0))
+
+end function DL_DESY5_integrand
 
 ! SN_Pantheon
 ! D. M. Scolnic et al., Astrophys. J. 859, 101 (2018) [arXiv:1710.00845].
@@ -1287,7 +1313,7 @@ function chi2total()
 
     real(8) :: chi2total
 
-    chi2total = chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2() + chi2_SN_Pantheon()
+    chi2total = chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2() + chi2_SN_DESY5()
 
 end function
 
