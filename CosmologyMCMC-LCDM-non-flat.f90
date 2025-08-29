@@ -396,6 +396,18 @@ function Omegar()
 
 end function Omegar
 
+function Ht(a)
+
+    implicit none
+
+    real(8) :: Ht
+    real(8), intent(in) :: a
+
+    Ht = sqrt(1.0d0 - ob - oc + (ob + oc)/a**3 + &
+    ok/a**2 - Omegar() + Omegar()/a**4)
+
+end function Ht
+
 function HH(a)
 
     implicit none
@@ -403,8 +415,7 @@ function HH(a)
     real(8) :: HH
     real(8), intent(in) :: a
 
-    HH = 100.0*h*sqrt(1.0d0 - ob - oc + (ob + oc)/a**3 + &
-    ok/a**2 - Omegar() + Omegar()/a**4)
+    HH = 100.0*h*Ht(a)
 
 end function HH
 
