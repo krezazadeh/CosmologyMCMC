@@ -243,7 +243,7 @@ program CosmologyMCMC
 
         points_local(rank + 1, i, :) = params_new
 
-        write(10 + rank, "(9e25.16)") 1.0d0, chi2params_new, params_new, &
+        write(10 + rank, "(10e25.16)") 1.0d0, chi2params_new, params_new, &
         H0(), om(), ol(), age()
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
