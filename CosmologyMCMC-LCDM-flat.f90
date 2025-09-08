@@ -77,9 +77,6 @@ program CosmologyMCMC
 
     ! Model parameters
 
-    ! Curvature of the universe
-    logical, parameter :: is_flat = .true.
-
     ! Constant parameters of the model
     real(8), parameter :: ok = 0.0d0
     
@@ -99,11 +96,15 @@ program CosmologyMCMC
 !     integer, parameter :: ndataCMB = 4
 !     real(8), dimension(ndataCMB) :: dataCMB
 !     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+!     ! Curvature of the universe
+!     logical, parameter :: is_flat = .true.
 
     ! CMB_Planck2018_Chen2018
     integer, parameter :: ndataCMB = 3
     real(8), dimension(ndataCMB) :: dataCMB
     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+    ! Curvature of the universe
+    logical, parameter :: is_flat = .true.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -589,12 +590,15 @@ function ddL(z, dL)
     real(8), intent(in) :: z, dL
 
     if (ok == 0.0d0) then
-        ddL = dL/(1.0d0 + z) + &
-        (100.0d0*h*(1.0d0 + z))/HH(1.0d0/(1.0d0 + z))
+        ddL = dL/(1.0d0 + z) + (1.0d0 + z)/Ht(1.0d0/(1.0d0 + z))
+    else if (ok > 0.0d0) then
+        ddL = ((1.0d0 + z)**2*Sqrt(1.0d0 + &
+        (ok*dL**2)/(1.0d0 + z)**2) + &
+        dL*Ht(1.0d0/(1.0d0 + z)))/((1.0d0 + z)*Ht(1.0d0/(1.0d0 + z)))
     else
-        ddL = (1.0d0 + z)*sqrt(1.0d0 + (ok*dL**2)/(1.0d0 + z)**2)* &
-        (dL/((1.0d0 + z)**2*sqrt(1.0d0 + (ok*dL**2)/(1.0d0 + z)**2)) + &
-        (100.0d0*h)/HH(1.0d0/(1.0d0 + z)))
+        ddL = ((1.0d0 + z)**2*Sqrt(Abs(1.0d0 - &
+        (Abs(ok)*dL**2)/(1.0d0 + z)**2)) + &
+        dL*Ht(1.0d0/(1.0d0 + z)))/((1.0d0 + z)*Ht(1.0d0/(1.0d0 + z)))
     end if
 
 end function ddL
@@ -1093,7 +1097,7 @@ end function chi2_BAO_DESI_DR2
 subroutine SN_DESY5()
 
     implicit none
-
+    
     integer :: i, j
     integer :: ios
     character(len=200) :: line
@@ -1106,14 +1110,14 @@ subroutine SN_DESY5()
     open (unit = 11, file = './data/DESY5_SN/DES-SN5YR_HD.txt', status = 'old')
 
     read(11,'(A)', iostat=ios) line
-
+    
     do i = 1, ndataSN
         read(11, *) CID(i), IDSURVEY(i), zCMB(i), zHD(i), zHEL(i), MU(i), MUERR(i)
     end do
 
     close(11)
 
-    ! We use this to prevent compiler error.
+    ! We use this to prevent compiler error.    
     do i = 1, ndataSN
         dataSN(i, 1) = 0.0d0
         dataSN(i, 2) = 0.0d0
@@ -1127,11 +1131,11 @@ subroutine SN_DESY5()
     open(11, file = "./data/DESY5_SN/covsys_000.txt", status='old')
 
         read(11, *) ! skip dimension line
-
+    
         do i = 1, ndataSN
             read(11, *) (Dij(i,j), j = 1, ndataSN)
         end do
-
+    
     close(11)
 
     do i = 1, ndataSN
@@ -1151,9 +1155,9 @@ subroutine SN_DESY5()
 end subroutine SN_DESY5
 
 function chi2_SN_DESY5()
-
+    
     real(8) :: chi2_SN_DESY5
-
+    
     real(8) :: z, mu_obs, mu_model
     real(8) :: delta_m(ndataSN)
     integer :: i, j
@@ -1179,9 +1183,9 @@ function chi2_SN_DESY5()
 end function chi2_SN_DESY5
 
 function M0_SN()
-
+    
     real(8) :: M0_SN
-
+    
     real(8) :: B, E
     real(8) :: z, mu_model, flux
     real(8) :: delta_m(ndataSN: ndataSN)
@@ -1214,12 +1218,16 @@ function DL_DESY5(z)
     real(8) :: DL_DESY5
     real(8) :: z
 
-    if (is_flat) then
+    if (ok == 0.0d0) then
         DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
         rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6)
-    else
+    else if (ok > 0.0d0) then
         DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
         (1.0d0/sqrt(ok))*sinh(sqrt(ok)* &
+        rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6))
+    else
+        DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
+        (1.0d0/sqrt(abs(ok)))*sin(sqrt(abs(ok))* &
         rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6))
     end if
 

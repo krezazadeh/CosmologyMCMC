@@ -77,9 +77,6 @@ program CosmologyMCMC
 
     ! Model parameters
 
-    ! Curvature of the universe
-    logical, parameter :: is_flat = .false.
-
     ! Constant parameters of the model
     ! real(8), parameter :: ok = 0.0d0
     
@@ -100,11 +97,15 @@ program CosmologyMCMC
 !     integer, parameter :: ndataCMB = 4
 !     real(8), dimension(ndataCMB) :: dataCMB
 !     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+!     ! Curvature of the universe
+!     logical, parameter :: is_flat = .true.
 
     ! CMB_Planck2018_Chen2018
     integer, parameter :: ndataCMB = 3
     real(8), dimension(ndataCMB) :: dataCMB
     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+    ! Curvature of the universe
+    logical, parameter :: is_flat = .false.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -189,7 +190,7 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.688993d0, 0.0473868d0, 0.2511d0, 0.003d0 /)
+    initpoint = (/ 0.688993d0, 0.0473868d0, 0.2511d0, -0.003d0 /)
     jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
     priormin = (/ 0.6d0, 0.01d0, 0.1d0, -0.1d0 /)
     priormax = (/ 0.8d0, 0.1d0, 0.5d0, 0.1d0 /)
@@ -592,12 +593,15 @@ function ddL(z, dL)
     real(8), intent(in) :: z, dL
 
     if (ok == 0.0d0) then
-        ddL = dL/(1.0d0 + z) + &
-        (100.0d0*h*(1.0d0 + z))/HH(1.0d0/(1.0d0 + z))
+        ddL = dL/(1.0d0 + z) + (1.0d0 + z)/Ht(1.0d0/(1.0d0 + z))
+    else if (ok > 0.0d0) then
+        ddL = ((1.0d0 + z)**2*Sqrt(1.0d0 + &
+        (ok*dL**2)/(1.0d0 + z)**2) + &
+        dL*Ht(1.0d0/(1.0d0 + z)))/((1.0d0 + z)*Ht(1.0d0/(1.0d0 + z)))
     else
-        ddL = (1.0d0 + z)*sqrt(1.0d0 + (ok*dL**2)/(1.0d0 + z)**2)* &
-        (dL/((1.0d0 + z)**2*sqrt(1.0d0 + (ok*dL**2)/(1.0d0 + z)**2)) + &
-        (100.0d0*h)/HH(1.0d0/(1.0d0 + z)))
+        ddL = ((1.0d0 + z)**2*Sqrt(Abs(1.0d0 - &
+        (Abs(ok)*dL**2)/(1.0d0 + z)**2)) + &
+        dL*Ht(1.0d0/(1.0d0 + z)))/((1.0d0 + z)*Ht(1.0d0/(1.0d0 + z)))
     end if
 
 end function ddL
@@ -1217,12 +1221,16 @@ function DL_DESY5(z)
     real(8) :: DL_DESY5
     real(8) :: z
 
-    if (is_flat) then
+    if (ok == 0.0d0) then
         DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
         rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6)
-    else
+    else if (ok > 0.0d0) then
         DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
         (1.0d0/sqrt(ok))*sinh(sqrt(ok)* &
+        rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6))
+    else
+        DL_DESY5 = (c/(100.0*h))*(z + 1.0d0)* &
+        (1.0d0/sqrt(abs(ok)))*sin(sqrt(abs(ok))* &
         rombint(DL_DESY5_integrand, 0.0d0, z, 1.0d-6))
     end if
 
