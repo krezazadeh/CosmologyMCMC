@@ -81,7 +81,7 @@ program CosmologyMCMC
     real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 4
+    integer, parameter :: nparams = 3
     
     ! Varying parameters of the model
     real(8) :: h, ob, oc
@@ -198,10 +198,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.681053d0, 0.0486086d0, 0.255981d0, -0.910656d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
-    priormin = (/ 0.6d0, 0.01d0, 0.1d0, -4.0d0 /)
-    priormax = (/ 0.8d0, 0.1d0, 0.5d0, -0.46d0 /)
+    initpoint = (/ 0.681053d0, 0.255981d0, -0.910656d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0 /)
+    priormin = (/ 0.6d0, 0.1d0, -4.0d0 /)
+    priormax = (/ 0.8d0, 0.5d0, -0.46d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -215,9 +215,9 @@ program CosmologyMCMC
     ! end do
 
     h = params(1)
-    ob = params(2)
-    oc = params(3)
-    log10phitinitial = params(4)
+    ob = 0.02218d0/h**2
+    oc = params(2)
+    log10phitinitial = params(3)
     call compute_background()
     call DLsol()
     chi2params = chi2total()
@@ -254,9 +254,9 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = params_new(2)
-        oc = params_new(3)
-        log10phitinitial = params_new(4)
+        ob = 0.02218d0/h**2
+        oc = params(2)
+        log10phitinitial = params_new(3)
         call compute_background()
         call DLsol()
         chi2params_new = chi2total()
@@ -268,7 +268,7 @@ program CosmologyMCMC
         points_local(rank + 1, i, :) = params_new
 
         write(10 + rank, "(11e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
-        H0(), om(), ol(), age(), log10(Vt0)
+        ob, H0(), om(), ol(), age(), log10(Vt0)
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
@@ -1421,7 +1421,7 @@ function chi2total()
 
     real(8) :: chi2total
 
-    chi2total = chi2_SN_DESY5() + chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2() + chi2BBN()
+    chi2total = chi2_SN_DESY5() + chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2()
 
 end function
 
