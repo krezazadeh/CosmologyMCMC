@@ -249,7 +249,7 @@ program CosmologyMCMC
 
         points_local(rank + 1, i, :) = params_new
 
-        write(10 + rank, "(10e25.16)") 1.0d0, chi2params_new, params_new, &
+        write(10 + rank, "(10e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
         H0(), om(), ol(), age()
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
@@ -1378,12 +1378,41 @@ function chi2_SN_Pantheon()
 
 end function chi2_SN_Pantheon
 
+! H0 : SH0ES
+! arXiv : 2112.04510
+! dataH0 = {73.04, 1.04};
+
+function chi2H0()
+
+    implicit none
+
+    real(8) :: chi2H0
+
+    chi2H0 = (100.0d0*h - 73.04d0)**2/1.04d0**2
+
+end function chi2H0
+
+! BBN
+! arXiv : 2401.15054
+! dataBBN = {0.02218, 0.00055};
+
+function chi2BBN()
+
+    implicit none
+
+    real(8) :: chi2BBN
+
+    chi2BBN = (obh2() - 0.02218d0)**2/0.00055d0**2
+
+end function chi2BBN
+
 function chi2total()
+
     implicit none
 
     real(8) :: chi2total
 
-    chi2total = chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2() + chi2_SN_DESY5()
+    chi2total = chi2_SN_DESY5() + chi2_CMB_Planck2018() + chi2_BAO_DESI_DR2() + chi2BBN()
 
 end function
 
