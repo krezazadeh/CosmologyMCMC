@@ -191,9 +191,9 @@ program CosmologyMCMC
     call random_seed()
 
     initpoint = (/ 0.688993d0, 0.047d0, 0.2511d0, 0.003d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
     priormin = (/ 0.6d0, 0.01d0, 0.1d0, -0.1d0 /)
     priormax = (/ 0.8d0, 0.1d0, 0.5d0, 0.1d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -241,8 +241,8 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = params(2)
-        oc = params(3)
+        ob = params_new(2)
+        oc = params_new(3)
         ok = params_new(4)
         call DLsol()
         chi2params_new = chi2total()
