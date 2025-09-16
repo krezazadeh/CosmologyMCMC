@@ -12,7 +12,9 @@
 !     periodically to check for convergence using the Gelman-Rubin Rhat diagnostic.
 !
 ! FEATURES:
-!     - Supports flat, open, and closed LCDM models
+!     - Includes the background dynamics of the Modified Entropic Cosmology (MEC)
+!       model
+!     - Supports flat, open, and closed LCDM and MEC models
 !     - Uses DL(z), DA(z), and H(z) observables from SN, BAO, and CMB
 !     - Modular structure: separate routines for DL, DA, chi-squareds, and priors
 !     - Adaptive stopping criterion based on Gelman-Rubin Rhat statistic
@@ -55,7 +57,7 @@
 !   https://github.com/krezazadeh
 !
 ! Date:
-!   21 May 2025
+!   10 September 2025
 !=======================================================================
 
 program CosmologyMCMC
@@ -190,10 +192,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.718573d0, 0.047d0, 0.238273d0, 6.54624d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.01d0 /)
+    initpoint = (/ 0.718573d0, 0.0432166d0, 0.238273d0, 6.54624d0 /)
     priormin = (/ 0.6d0, 0.01d0, 0.1d0, 1.0d0 /)
     priormax = (/ 0.8d0, 0.1d0, 0.5d0, 20.0d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.01d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -241,9 +243,9 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = params(2)
-        oc = params(3)
-        n_MEC = params(4)
+        ob = params_new(2)
+        oc = params_new(3)
+        n_MEC = params_new(4)
         call DLsol()
         chi2params_new = chi2total()
 
