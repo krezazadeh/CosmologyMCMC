@@ -81,7 +81,7 @@ program CosmologyMCMC
     real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 3
+    integer, parameter :: nparams = 2
     
     ! Varying parameters of the model
     real(8) :: h, ob, oc
@@ -92,19 +92,19 @@ program CosmologyMCMC
     real(8) :: array_dL(n_array_z)
     real(8) :: array_dL_buffer(n_array_z)
 
-!     ! CMB_Planck2018_Zhai2018
-!     integer, parameter :: ndataCMB = 4
-!     real(8), dimension(ndataCMB) :: dataCMB
-!     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
-!     ! Curvature of the universe
-!     logical, parameter :: is_flat = .true.
-
-    ! CMB_Planck2018_Chen2018
-    integer, parameter :: ndataCMB = 3
+    ! CMB_Planck2018_Zhai2018
+    integer, parameter :: ndataCMB = 4
     real(8), dimension(ndataCMB) :: dataCMB
     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
     ! Curvature of the universe
     logical, parameter :: is_flat = .true.
+
+!     ! CMB_Planck2018_Chen2018
+!     integer, parameter :: ndataCMB = 3
+!     real(8), dimension(ndataCMB) :: dataCMB
+!     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+!     ! Curvature of the universe
+!     logical, parameter :: is_flat = .true.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -189,10 +189,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.683131d0, 0.047d0, 0.254703d0 /)
-    priormin = (/ 0.6d0, 0.01d0, 0.1d0 /)
-    priormax = (/ 0.8d0, 0.1d0, 0.5d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0 /)
+    initpoint = (/ 0.683131d0, 0.254703d0 /)
+    priormin = (/ 0.6d0, 0.1d0 /)
+    priormax = (/ 0.8d0, 0.5d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -206,8 +206,8 @@ program CosmologyMCMC
     ! end do
 
     h = params(1)
-    ob = params(2)
-    oc = params(3)
+    ob = 0.02218d0/h**2
+    oc = params(2)
     call DLsol()
     chi2params = chi2total()
 
@@ -239,15 +239,15 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = params_new(2)
-        oc = params_new(3)
+        ob = 0.02218d0/h**2
+        oc = params_new(2)
         call DLsol()
         chi2params_new = chi2total()
 
         points_local(rank + 1, i, :) = params_new
 
         write(10 + rank, "(9e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
-        H0(), om(), ol(), age()
+       ob, H0(), om(), ol(), age()
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
@@ -892,79 +892,11 @@ function inv(A) result(Ainv)
     
 end function inv
 
-! ! CMB_Planck18
-! ! Zhai2018
-! ! arXiv:1811.07425
-! ! Central values for {R, la, obh2, ns} from Planck 2018 likelihood
-! ! base plikHM TTTEEE lowl lowE lensing
-!
-! subroutine CMB_Planck2018()
-!
-!     implicit none
-!
-!     integer :: i, j
-!
-!     if (is_flat == .true.) then
-!         open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-flat.txt', status = 'old')
-!     else
-!         open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-non-flat.txt', status = 'old')
-!     end if
-!
-!     do i = 1, ndataCMB
-!         read(11, *) dataCMB(i)
-!     end do
-!
-!     close(11)
-!
-!     if (is_flat == .true.) then
-!         open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-flat-cov.txt', status = 'old')
-!     else
-!         open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-non-flat-cov.txt', status = 'old')
-!     end if
-!
-!     do i = 1, ndataCMB
-!         do j = 1, ndataCMB
-!             read(11, *) covCMB(i, j)
-!         end do
-!     end do
-!
-!     close(11)
-!
-!     invcovCMB = inv(covCMB)
-!
-! end subroutine CMB_Planck2018
-!
-! function vecCMB()
-!
-!     implicit none
-!
-!     real(8), dimension(ndataCMB) :: vecCMB
-!
-!     vecCMB(1) = R() - dataCMB(1)
-!     vecCMB(2) = la() - dataCMB(2)
-!     vecCMB(3) = obh2() - dataCMB(3)
-!     vecCMB(4) = 0.0d0
-!
-! end function vecCMB
-!
-! function chi2_CMB_Planck2018()
-!
-!     implicit none
-!
-!     real(8) :: chi2_CMB_Planck2018
-!
-!     real(8) :: temp(4)
-!
-!     temp = matmul(invcovCMB, vecCMB())
-!     chi2_CMB_Planck2018 = dot_product(vecCMB(), temp)
-!
-! end function chi2_CMB_Planck2018
-
 ! CMB_Planck18
-! Chen2018
-! arXiv:1808.05724
-! Central values for {R, la, obh2} from Planck 2018 likelihood
-! base Planck 2018 TT,TE,EE + lowE
+! Zhai2018
+! arXiv:1811.07425
+! Central values for {R, la, obh2, ns} from Planck 2018 likelihood
+! base plikHM TTTEEE lowl lowE lensing
 
 subroutine CMB_Planck2018()
 
@@ -973,9 +905,9 @@ subroutine CMB_Planck2018()
     integer :: i, j
 
     if (is_flat == .true.) then
-        open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-flat.txt', status = 'old')
+        open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-flat.txt', status = 'old')
     else
-        open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-non-flat.txt', status = 'old')
+        open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-non-flat.txt', status = 'old')
     end if
 
     do i = 1, ndataCMB
@@ -985,18 +917,20 @@ subroutine CMB_Planck2018()
     close(11)
 
     if (is_flat == .true.) then
-        open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-flat-invcov.txt', status = 'old')
+        open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-flat-cov.txt', status = 'old')
     else
-        open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-non-flat-invcov.txt', status = 'old')
+        open (unit = 11, file = './data/CMB_Planck2018_Zhai2018/CMB_Planck2018-non-flat-cov.txt', status = 'old')
     end if
 
     do i = 1, ndataCMB
         do j = 1, ndataCMB
-            read(11, *) invcovCMB(i, j)
+            read(11, *) covCMB(i, j)
         end do
     end do
 
     close(11)
+
+    invcovCMB = inv(covCMB)
 
 end subroutine CMB_Planck2018
 
@@ -1009,6 +943,7 @@ function vecCMB()
     vecCMB(1) = R() - dataCMB(1)
     vecCMB(2) = la() - dataCMB(2)
     vecCMB(3) = obh2() - dataCMB(3)
+    vecCMB(4) = 0.0d0
 
 end function vecCMB
 
@@ -1018,12 +953,77 @@ function chi2_CMB_Planck2018()
 
     real(8) :: chi2_CMB_Planck2018
 
-    real(8) :: temp(ndataCMB)
+    real(8) :: temp(4)
 
     temp = matmul(invcovCMB, vecCMB())
     chi2_CMB_Planck2018 = dot_product(vecCMB(), temp)
 
 end function chi2_CMB_Planck2018
+
+! ! CMB_Planck18
+! ! Chen2018
+! ! arXiv:1808.05724
+! ! Central values for {R, la, obh2} from Planck 2018 likelihood
+! ! base Planck 2018 TT,TE,EE + lowE
+!
+! subroutine CMB_Planck2018()
+!
+!     implicit none
+!
+!     integer :: i, j
+!
+!     if (is_flat == .true.) then
+!         open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-flat.txt', status = 'old')
+!     else
+!         open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-non-flat.txt', status = 'old')
+!     end if
+!
+!     do i = 1, ndataCMB
+!         read(11, *) dataCMB(i)
+!     end do
+!
+!     close(11)
+!
+!     if (is_flat == .true.) then
+!         open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-flat-invcov.txt', status = 'old')
+!     else
+!         open (unit = 11, file = './data/CMB_Planck2018_Chen2018/CMB_Planck2018-non-flat-invcov.txt', status = 'old')
+!     end if
+!
+!     do i = 1, ndataCMB
+!         do j = 1, ndataCMB
+!             read(11, *) invcovCMB(i, j)
+!         end do
+!     end do
+!
+!     close(11)
+!
+! end subroutine CMB_Planck2018
+!
+! function vecCMB()
+!
+!     implicit none
+!
+!     real(8), dimension(ndataCMB) :: vecCMB
+!
+!     vecCMB(1) = R() - dataCMB(1)
+!     vecCMB(2) = la() - dataCMB(2)
+!     vecCMB(3) = obh2() - dataCMB(3)
+!
+! end function vecCMB
+!
+! function chi2_CMB_Planck2018()
+!
+!     implicit none
+!
+!     real(8) :: chi2_CMB_Planck2018
+!
+!     real(8) :: temp(ndataCMB)
+!
+!     temp = matmul(invcovCMB, vecCMB())
+!     chi2_CMB_Planck2018 = dot_product(vecCMB(), temp)
+!
+! end function chi2_CMB_Planck2018
 
 ! BAO_DESI_DR2
 ! arXiv:2503.14738
