@@ -83,7 +83,7 @@ program CosmologyMCMC
     real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 4
+    integer, parameter :: nparams = 3
     
     ! Varying parameters of the model
     real(8) :: h, ob, oc
@@ -192,10 +192,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.718573d0, 0.0432166d0, 0.238273d0, 6.54624d0 /)
-    priormin = (/ 0.6d0, 0.01d0, 0.1d0, 1.0d0 /)
-    priormax = (/ 0.8d0, 0.1d0, 0.5d0, 20.0d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.01d0 /)
+    initpoint = (/ 0.718573d0, 0.238273d0, 6.54624d0 /)
+    priormin = (/ 0.6d0, 0.1d0, 1.0d0 /)
+    priormax = (/ 0.8d0, 0.5d0, 20.0d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.01d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -209,9 +209,9 @@ program CosmologyMCMC
     ! end do
 
     h = params(1)
-    ob = params(2)
-    oc = params(3)
-    n_MEC = params(4)
+    ob = 0.02218d0/h**2
+    oc = params(2)
+    n_MEC = params(3)
     call DLsol()
     chi2params = chi2total()
 
@@ -243,16 +243,16 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = params_new(2)
-        oc = params_new(3)
-        n_MEC = params_new(4)
+        ob = 0.02218d0/h**2
+        oc = params_new(2)
+        n_MEC = params_new(3)
         call DLsol()
         chi2params_new = chi2total()
 
         points_local(rank + 1, i, :) = params_new
 
         write(10 + rank, "(12e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
-        H0(), om(), ol(), age(), ac(), addottc()
+        ob, H0(), om(), ol(), age(), ac(), addottc()
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
