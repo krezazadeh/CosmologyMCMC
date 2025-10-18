@@ -81,7 +81,7 @@ program CosmologyMCMC
     real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 2
+    integer, parameter :: nparams = 3
     
     ! Varying parameters of the model
     real(8) :: h, ob, oc
@@ -92,19 +92,19 @@ program CosmologyMCMC
     real(8) :: array_dL(n_array_z)
     real(8) :: array_dL_buffer(n_array_z)
 
-    ! CMB_Planck2018_Zhai2018
-    integer, parameter :: ndataCMB = 4
-    real(8), dimension(ndataCMB) :: dataCMB
-    real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
-    ! Curvature of the universe
-    logical, parameter :: is_flat = .true.
-
-!     ! CMB_Planck2018_Chen2018
-!     integer, parameter :: ndataCMB = 3
+!     ! CMB_Planck2018_Zhai2018
+!     integer, parameter :: ndataCMB = 4
 !     real(8), dimension(ndataCMB) :: dataCMB
 !     real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
 !     ! Curvature of the universe
 !     logical, parameter :: is_flat = .true.
+
+    ! CMB_Planck2018_Chen2018
+    integer, parameter :: ndataCMB = 3
+    real(8), dimension(ndataCMB) :: dataCMB
+    real(8), dimension(ndataCMB, ndataCMB) :: covCMB, invcovCMB
+    ! Curvature of the universe
+    logical, parameter :: is_flat = .true.
 
     ! BAO_DESI_DR2
     integer, parameter :: ndataBAO = 13
@@ -129,7 +129,7 @@ program CosmologyMCMC
     ! MCMC
     integer, parameter :: max_try = 10000
     integer, parameter :: max_iter = 1000
-    real(8), parameter :: Rhat_minus_1_tol = 0.01d0
+    real(8), parameter :: Rhat_minus_1_tol = -1.0d0
     integer :: ierr, rank, nprocess
     integer :: try
     real(8), allocatable :: points(:, :, :) ! points(i_process, i_point, i_param)
@@ -189,10 +189,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.683131d0, 0.254703d0 /)
-    priormin = (/ 0.6d0, 0.1d0 /)
-    priormax = (/ 0.8d0, 0.5d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0 /)
+    initpoint = (/ 0.683131d0, 0.047d0, 0.254703d0 /)
+    priormin = (/ 0.6d0, 0.01d0, 0.1d0 /)
+    priormax = (/ 0.8d0, 0.1d0, 0.5d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -206,8 +206,8 @@ program CosmologyMCMC
     ! end do
 
     h = params(1)
-    ob = 0.02218d0/h**2
-    oc = params(2)
+    ob = params(2)
+    oc = params(3)
     call DLsol()
     chi2params = chi2total()
 
@@ -239,15 +239,15 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = 0.02218d0/h**2
-        oc = params_new(2)
+        ob = params_new(2)
+        oc = params_new(3)
         call DLsol()
         chi2params_new = chi2total()
 
         points_local(rank + 1, i, :) = params_new
 
         write(10 + rank, "(9e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
-        ob, H0(), om(), ol(), age()
+        H0(), om(), ol(), age()
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
