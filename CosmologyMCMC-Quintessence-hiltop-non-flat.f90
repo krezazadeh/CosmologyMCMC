@@ -81,7 +81,7 @@ program CosmologyMCMC
     ! real(8), parameter :: ok = 0.0d0
     
     ! Number of varying parameters of the model
-    integer, parameter :: nparams = 4
+    integer, parameter :: nparams = 5
     
     ! Varying parameters of the model
     real(8) :: h, ob, oc
@@ -199,10 +199,10 @@ program CosmologyMCMC
     
     call random_seed()
 
-    initpoint = (/ 0.686127d0, 0.253673d0, 0.003d0, -0.874331d0 /)
-    priormin = (/ 0.6d0, 0.1d0, -0.1d0, -4.0d0 /)
-    priormax = (/ 0.8d0, 0.5d0, 0.1d0, -0.46d0 /)
-    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
+    initpoint = (/ 0.686127d0, 0.047d0, 0.253673d0, 0.003d0, -0.874331d0 /)
+    priormin = (/ 0.6d0, 0.01d0, 0.1d0, -0.1d0, -4.0d0 /)
+    priormax = (/ 0.8d0, 0.1d0, 0.5d0, 0.1d0, -0.46d0 /)
+    jumpsize = (/ 0.001d0, 0.001d0, 0.001d0, 0.001d0, 0.001d0 /)
 
     ! start from the given initial point.
     do i = 1, nparams
@@ -216,10 +216,10 @@ program CosmologyMCMC
     ! end do
 
     h = params(1)
-    ob = 0.02218d0/h**2
-    oc = params(2)
-    ok = params(3)
-    log10phitinitial = params(4)
+    ob = params(2)
+    oc = params(3)
+    ok = params(4)
+    log10phitinitial = params(5)
     call compute_background()
     call DLsol()
     chi2params = chi2total()
@@ -256,10 +256,10 @@ program CosmologyMCMC
         end do
 
         h = params_new(1)
-        ob = 0.02218d0/h**2
-        oc = params_new(2)
-        ok = params_new(3)
-        log10phitinitial = params_new(4)
+        ob = params_new(2)
+        oc = params_new(3)
+        ok = params_new(4)
+        log10phitinitial = params_new(5)
         call compute_background()
         call DLsol()
         chi2params_new = chi2total()
@@ -271,7 +271,7 @@ program CosmologyMCMC
         points_local(rank + 1, i, :) = params_new
 
         write(10 + rank, "(12e25.16)") 1.0d0, chi2params_new/2.0d0, params_new, &
-        ob, H0(), om(), ol(), age(), log10(Vt0)
+        H0(), om(), ol(), age(), log10(Vt0)
 
         alpha = min(1.0d0, exp(-0.5d0 * (chi2params_new - chi2params)))
         call random_number(rand)
